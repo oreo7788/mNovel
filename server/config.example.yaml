@@ -1,0 +1,54 @@
+# 衣搭库后端配置文件示例
+# 复制此文件为 config.yaml 并修改相应配置
+
+server:
+  port: 8080
+  mode: debug  # debug, release, test
+  read_timeout: 30s
+  write_timeout: 30s
+
+database:
+  host: localhost
+  port: 3306
+  username: root
+  password: your_password
+  database: yidaiku
+  max_idle_conns: 10
+  max_open_conns: 100
+
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
+
+jwt:
+  secret: your_jwt_secret_key_here_should_be_at_least_32_chars
+  access_token_ttl: 24h
+  refresh_token_ttl: 168h  # 7天
+
+qiniu:
+  access_key: your_qiniu_access_key
+  secret_key: your_qiniu_secret_key
+  bucket: yidaiku
+  domain: https://cdn.example.com
+
+doubao_ai:
+  api_key: your_doubao_api_key
+  api_secret: your_doubao_api_secret
+  base_url: https://api.doubao.com/v1
+  timeout: 30s
+
+weather:
+  api_key: your_weather_api_key
+  base_url: https://api.qweather.com/v7
+
+upload:
+  max_file_size: 10485760  # 10MB
+  chunk_size: 1048576      # 1MB
+  max_concurrent: 3
+  allowed_formats:
+    - jpg
+    - jpeg
+    - png
+    - webp

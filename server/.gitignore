@@ -1,0 +1,38 @@
+# 二进制文件
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+yidaiku-server
+
+# 测试
+*.test
+*.out
+
+# 依赖目录
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 配置文件（包含敏感信息）
+config.yaml
+*.local.yaml
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+tmp/
+temp/
+
+# 上传文件
+uploads/
+
+# macOS
+.DS_Store
