@@ -411,6 +411,20 @@ body {
 .upload-progress .progress-text { font-size: 13px; color: var(--color-text-secondary); }
 .upload-zone-dragover { border-color: var(--color-accent); background: rgba(196,165,116,0.12); }
 
+.cloud-upload-result { margin-bottom: 24px; padding: 16px; }
+.cloud-result-title { font-size: 15px; font-weight: 500; margin-bottom: 12px; color: var(--color-text); }
+.cloud-result-list { display: flex; flex-wrap: wrap; gap: 16px; }
+.cloud-result-item {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  padding: 12px; background: var(--color-bg-secondary); border-radius: var(--radius-card);
+  border: 1px solid var(--color-border);
+}
+.cloud-result-thumb { width: 120px; height: 120px; object-fit: cover; border-radius: var(--radius-btn); }
+.cloud-result-meta { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.cloud-result-filename { color: var(--color-text-secondary); word-break: break-all; }
+.cloud-result-link { color: var(--color-accent); text-decoration: none; }
+.cloud-result-link:hover { text-decoration: underline; }
+
 .upload-toast {
   position: fixed; left: 50%; bottom: 80px; transform: translateX(-50%);
   padding: 10px 20px; background: rgba(0,0,0,0.75); color: #fff; font-size: 14px;

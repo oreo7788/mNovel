@@ -20,7 +20,7 @@
       @drop.prevent="onDrop"
     >
       <div>点击或拖拽照片到此处</div>
-      <div class="hint">最多 {{ MAX_FILES }} 张/次，支持从相册选择或拍照（先缓存到本地）</div>
+      <div class="hint">最多 {{ MAX_FILES }} 张/次，支持从相册选择或拍照（先缓存到本地，登录后可上传到七牛）</div>
     </div>
 
     <div v-show="uploading" class="upload-progress">
@@ -28,6 +28,19 @@
         <div class="progress-fill" :style="{ width: progress + '%' }"></div>
       </div>
       <div class="progress-text">{{ progressText }}</div>
+    </div>
+
+    <div v-show="cloudUrls.length > 0" class="cloud-upload-result card">
+      <div class="cloud-result-title">已上传到七牛</div>
+      <div class="cloud-result-list">
+        <div v-for="(item, i) in cloudUrls" :key="i" class="cloud-result-item">
+          <img :src="item.url" alt="" class="cloud-result-thumb" />
+          <div class="cloud-result-meta">
+            <span class="cloud-result-filename">{{ item.filename }}</span>
+            <a :href="item.url" target="_blank" rel="noopener" class="cloud-result-link">打开链接</a>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div v-show="cachedList.length > 0" class="cached-list" aria-label="已缓存到本地的图片">
@@ -73,6 +86,8 @@ import {
   cacheImagesToLocal,
   MAX_UPLOAD_FILES,
 } from '../composables/useUploadCache'
+import { useUser } from '../composables/useUser'
+import { uploadSimpleApi } from '../api'
 import { showToast } from '../utils/toast'
 
 const MAX_FILES = MAX_UPLOAD_FILES
@@ -82,6 +97,8 @@ const uploading = ref(false)
 const progress = ref(0)
 const progressText = ref('')
 const rawCached = ref([])
+const cloudUrls = ref([])
+const { user: currentUser } = useUser()
 
 const cachedList = computed(() => {
   return (rawCached.value || []).map((item) => ({
@@ -126,13 +143,22 @@ function handleFiles(files) {
   progress.value = 0
   progressText.value = '正在缓存到本地… 0%'
 
+  const token = currentUser.value?.access_token
+  const hasValidToken = typeof token === 'string' && token.length > 10
+  if (!hasValidToken && list.length > 0) {
+    showToast('上传到七牛需先登录')
+  }
   cacheImagesToLocal(list)
     .then((res) => {
       progress.value = 100
       progressText.value = '已缓存 ' + res.count + ' 张图片到本地'
       showToast('已缓存 ' + res.count + ' 张图片到本地')
       loadCached()
+      if (hasValidToken && list.length > 0) {
+        return uploadToCloud(list, token)
+      }
     })
+    .then(() => {})
     .catch((err) => {
       progressText.value = '缓存失败：' + (err?.message || '未知错误')
       showToast('缓存失败，请重试')
@@ -140,6 +166,29 @@ function handleFiles(files) {
     .finally(() => {
       uploading.value = false
     })
+}
+
+async function uploadToCloud(files, accessToken) {
+  const total = files.length
+  if (total === 0) return
+  progressText.value = '正在上传到七牛… 0/' + total
+  const results = []
+  for (let i = 0; i < files.length; i++) {
+    progress.value = Math.round(((i + 0.5) / total) * 100)
+    progressText.value = '正在上传到七牛… ' + (i + 1) + '/' + total
+    const res = await uploadSimpleApi(files[i], accessToken)
+    if (res.ok && res.data?.url) {
+      results.push({ url: res.data.url, filename: res.data.filename || files[i].name })
+    } else {
+      showToast('上传失败: ' + (res.message || '未知错误'))
+    }
+  }
+  progress.value = 100
+  progressText.value = '已上传 ' + results.length + ' 张到七牛'
+  if (results.length > 0) {
+    cloudUrls.value = [...(cloudUrls.value || []), ...results]
+    showToast('已上传 ' + results.length + ' 张到七牛')
+  }
 }
 
 function removeItem(id) {

@@ -73,3 +73,48 @@ export function loginApi(account, password) {
     body: JSON.stringify(body),
   })
 }
+
+/**
+ * 带 Token 的请求（用于需登录的接口）
+ * @param {string} path - 接口路径
+ * @param {RequestInit} options - fetch 选项（可含 body、method 等）
+ * @param {string} accessToken - JWT access_token
+ */
+export async function requestWithToken(path, options = {}, accessToken) {
+  const url = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080') + path
+  const headers = {
+    ...options.headers,
+  }
+  if (typeof accessToken === 'string' && accessToken.length > 0) {
+    headers['Authorization'] = 'Bearer ' + accessToken
+  }
+  try {
+    const res = await fetch(url, { ...options, headers })
+    const body = await res.json().catch(() => ({}))
+    const code = body.code
+    const message = body.message ?? '请求失败'
+    const data = body.data
+    if (res.ok && code === 0) {
+      return { ok: true, data, message }
+    }
+    return { ok: false, message, data }
+  } catch (err) {
+    return { ok: false, message: err.message || '网络错误' }
+  }
+}
+
+/**
+ * 简单上传图片到七牛（后端转发）
+ * @param {File} file - 图片文件
+ * @param {string} accessToken - JWT access_token
+ * @returns {Promise<{ok: boolean, data?: { url: string, filename: string }, message?: string}>}
+ */
+export function uploadSimpleApi(file, accessToken) {
+  const form = new FormData()
+  form.append('file', file)
+  return requestWithToken('/api/v1/upload/simple', {
+    method: 'POST',
+    body: form,
+    headers: {}, // 不设 Content-Type，让浏览器自动带 multipart boundary
+  }, accessToken)
+}

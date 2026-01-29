@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
+	"strconv"
 	"time"
 
 	"yidaiku-server/internal/config"
@@ -115,13 +116,13 @@ func (s *UploadService) UploadChunk(ctx context.Context, userID string, req *mod
 	}
 
 	// 检查是否已上传
-	uploadedChunks := task.UploadedChunks
-	for _, idx := range uploadedChunks {
-		if idx == string(rune(req.ChunkIndex+'0')) {
-			// 已上传，直接返回成功
+	chunkIdxStr := strconv.Itoa(req.ChunkIndex)
+	for _, idx := range task.UploadedChunks {
+		if idx == chunkIdxStr {
 			return s.buildChunkResponse(task)
 		}
 	}
+	uploadedChunks := task.UploadedChunks
 
 	// 上传到七牛云
 	if s.ossClient != nil {
@@ -134,7 +135,7 @@ func (s *UploadService) UploadChunk(ctx context.Context, userID string, req *mod
 
 	// 更新任务状态
 	task.Status = model.UploadStatusUploading
-	uploadedChunks = append(uploadedChunks, string(rune(req.ChunkIndex+'0')))
+	uploadedChunks = append(uploadedChunks, chunkIdxStr)
 	task.UploadedChunks = uploadedChunks
 
 	if err := s.uploadRepo.Update(ctx, task); err != nil {
@@ -302,11 +303,13 @@ func (s *UploadService) buildChunkResponse(task *model.UploadTask) (*model.Uploa
 	uploadedCount := len(task.UploadedChunks)
 	progress := float64(uploadedCount) / float64(task.TotalChunks)
 
-	// 转换已上传的块索引
+	// 转换已上传的块索引（JSON 存的是字符串数组）
 	var uploadedIndices []int
 	for _, chunk := range task.UploadedChunks {
-		idx := int(chunk[0] - '0')
-		uploadedIndices = append(uploadedIndices, idx)
+		idx, err := strconv.Atoi(chunk)
+		if err == nil {
+			uploadedIndices = append(uploadedIndices, idx)
+		}
 	}
 
 	return &model.UploadChunkResponse{
@@ -324,5 +327,5 @@ func (s *UploadService) generateFileKey(userID, taskID, fileName string) string 
 // generateSimpleFileKey 生成简单文件存储路径
 func (s *UploadService) generateSimpleFileKey(userID, fileName string) string {
 	timestamp := time.Now().UnixNano()
-	return "users/" + userID + "/uploads/" + string(rune(timestamp)) + "_" + fileName
+	return "users/" + userID + "/uploads/" + strconv.FormatInt(timestamp, 10) + "_" + fileName
 }

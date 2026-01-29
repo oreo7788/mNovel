@@ -29,11 +29,16 @@ func AuthMiddleware(jwtManager *auth.JWTManager) gin.HandlerFunc {
 		}
 
 		tokenString := parts[1]
+		if tokenString == "" {
+			response.Unauthorized(c, "缺少认证信息")
+			c.Abort()
+			return
+		}
 
-		// 验证Token
+		// 验证Token（不向客户端暴露具体错误，避免泄露 "bad token" 等库信息）
 		claims, err := jwtManager.ValidateAccessToken(tokenString)
 		if err != nil {
-			response.Unauthorized(c, "认证已过期，请重新登录")
+			response.Unauthorized(c, "认证失败，请重新登录")
 			c.Abort()
 			return
 		}

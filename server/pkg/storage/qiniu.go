@@ -72,9 +72,13 @@ func (q *QiniuOSS) DeleteByURL(fileURL string) error {
 	return q.Delete(key)
 }
 
-// GetFileURL 获取文件URL
+// GetFileURL 获取文件URL（若 domain 未带协议则补 https，便于前端 img 使用）
 func (q *QiniuOSS) GetFileURL(key string) string {
-	return fmt.Sprintf("%s/%s", q.domain, key)
+	domain := q.domain
+	if domain != "" && !strings.HasPrefix(domain, "http://") && !strings.HasPrefix(domain, "https://") {
+		domain = "https://" + domain
+	}
+	return fmt.Sprintf("%s/%s", domain, key)
 }
 
 // GetThumbnailURL 获取缩略图URL（七牛云图片处理）
