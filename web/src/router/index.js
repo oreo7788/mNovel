@@ -5,6 +5,7 @@ const routes = [
   { path: '/login', name: 'login', component: () => import('../views/Login.vue'), meta: { title: '登录' } },
   { path: '/register', name: 'register', component: () => import('../views/Register.vue'), meta: { title: '注册' } },
   { path: '/wardrobe', name: 'wardrobe', component: () => import('../views/Wardrobe.vue'), meta: { title: '衣橱' } },
+  { path: '/wardrobe/items/:id', name: 'clothing-detail', component: () => import('../views/ClothingDetail.vue'), meta: { title: '衣物详情' } },
   { path: '/recommend', name: 'recommend', component: () => import('../views/Recommend.vue'), meta: { title: '推荐' } },
   { path: '/favorites', name: 'favorites', component: () => import('../views/Favorites.vue'), meta: { title: '收藏' } },
   { path: '/upload', name: 'upload', component: () => import('../views/Upload.vue'), meta: { title: '上传衣物' } },

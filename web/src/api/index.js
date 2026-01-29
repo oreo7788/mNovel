@@ -118,3 +118,29 @@ export function uploadSimpleApi(file, accessToken) {
     headers: {}, // 不设 Content-Type，让浏览器自动带 multipart boundary
   }, accessToken)
 }
+
+/**
+ * 获取单件衣物详情（需登录）
+ * @param {string} itemId - 衣物 ID
+ * @param {string} accessToken - JWT access_token
+ * @returns {Promise<{ok: boolean, data?: object, message?: string}>}
+ */
+export function getClothingItemApi(itemId, accessToken) {
+  return requestWithToken(`/api/v1/wardrobe/items/${encodeURIComponent(itemId)}`, {
+    method: 'GET',
+  }, accessToken)
+}
+
+/**
+ * 删除衣物（软删，需登录）
+ * @param {string} itemId - 衣物 ID
+ * @param {string} accessToken - JWT access_token
+ * @param {boolean} permanent - 是否永久删除（回收站内可传 true）
+ * @returns {Promise<{ok: boolean, message?: string}>}
+ */
+export function deleteClothingItemApi(itemId, accessToken, permanent = false) {
+  const path = `/api/v1/wardrobe/items/${encodeURIComponent(itemId)}`
+  return requestWithToken(path + (permanent ? '?permanent=true' : ''), {
+    method: 'DELETE',
+  }, accessToken)
+}

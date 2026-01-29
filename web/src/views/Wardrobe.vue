@@ -107,7 +107,7 @@ function loadCached() {
 }
 
 function openItem(item) {
-  // 后续可做详情/编辑
+  if (item?.id) router.push('/wardrobe/items/' + item.id)
 }
 
 onMounted(loadCached)
