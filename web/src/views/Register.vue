@@ -231,12 +231,12 @@ function validate() {
   return valid
 }
 
-function handleSubmit() {
+async function handleSubmit() {
   if (!validate()) return
 
   submitting.value = true
   try {
-    const result = register(username.value.trim(), password.value, email.value.trim())
+    const result = await register(username.value.trim(), password.value, email.value.trim())
     if (result.ok) {
       showToast('注册成功，请登录')
       router.replace('/login')

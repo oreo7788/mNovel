@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"strings"
 	"time"
 
 	"yidaiku-server/internal/model"
@@ -17,6 +18,7 @@ import (
 // 注册相关错误，便于 Handler 区分 HTTP 状态码
 var (
 	ErrPhoneAlreadyRegistered = errors.New("该手机号已注册")
+	ErrEmailAlreadyRegistered = errors.New("该邮箱已注册")
 	ErrInvalidPhoneFormat     = errors.New("手机号格式不正确，应为11位数字")
 )
 
@@ -38,16 +40,19 @@ func NewUserService(jwtManager *auth.JWTManager) *UserService {
 	}
 }
 
-// RegisterRequest 注册请求（手机号可选，不绑定手机号也可注册）
+// RegisterRequest 注册请求（手机号可选；支持昵称+邮箱注册）
 type RegisterRequest struct {
-	Phone    string `json:"phone"` // 可选，不填则仅密码+昵称注册
+	Phone    string `json:"phone"` // 可选
 	Password string `json:"password" binding:"required,min=6"`
-	Nickname string `json:"nickname"`
+	Nickname string `json:"nickname"` // 可选，前端传用户名
+	Email    string `json:"email"`    // 可选
 }
 
-// LoginRequest 登录请求
+// LoginRequest 登录请求（手机号、邮箱、昵称三选一，与密码一起使用）
 type LoginRequest struct {
-	Phone    string `json:"phone" binding:"required"`
+	Phone    string `json:"phone"`
+	Email    string `json:"email"`
+	Nickname string `json:"nickname"`
 	Password string `json:"password" binding:"required"`
 }
 
@@ -62,7 +67,7 @@ type AuthResponse struct {
 // 中国大陆手机号：1 开头，共 11 位数字
 var phoneRegex = regexp.MustCompile(`^1[3-9]\d{9}$`)
 
-// Register 用户注册（不要求绑定手机号）
+// Register 用户注册（不要求绑定手机号；支持昵称+邮箱）
 func (s *UserService) Register(ctx context.Context, req *RegisterRequest) (*AuthResponse, error) {
 	// 若填写了手机号，则校验格式并检查是否已注册
 	if req.Phone != "" {
@@ -77,6 +82,16 @@ func (s *UserService) Register(ctx context.Context, req *RegisterRequest) (*Auth
 			return nil, ErrPhoneAlreadyRegistered
 		}
 	}
+	// 若填写了邮箱，检查是否已注册
+	if req.Email != "" {
+		existingUser, err := s.userRepo.GetByEmail(ctx, req.Email)
+		if err != nil {
+			return nil, err
+		}
+		if existingUser != nil {
+			return nil, ErrEmailAlreadyRegistered
+		}
+	}
 
 	// 密码加密
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
@@ -89,6 +104,7 @@ func (s *UserService) Register(ctx context.Context, req *RegisterRequest) (*Auth
 		ID:           userID,
 		PasswordHash: string(hashedPassword),
 		Nickname:     req.Nickname,
+		Email:        req.Email,
 		Status:       1,
 		CreatedAt:    time.Now(),
 	}
@@ -98,10 +114,17 @@ func (s *UserService) Register(ctx context.Context, req *RegisterRequest) (*Auth
 		user.Phone = &req.Phone
 	}
 
-	// 默认昵称：有手机用后4位，无手机用 user_id 后4位
+	// 默认昵称：有手机用后4位，有邮箱用邮箱前缀，否则用 user_id 后4位
 	if user.Nickname == "" {
 		if req.Phone != "" {
 			user.Nickname = "用户" + req.Phone[len(req.Phone)-4:]
+		} else if req.Email != "" {
+			at := strings.Index(req.Email, "@")
+			if at > 0 && at <= 20 {
+				user.Nickname = req.Email[:at]
+			} else {
+				user.Nickname = "用户" + userID[len(userID)-4:]
+			}
 		} else {
 			if len(userID) >= 4 {
 				user.Nickname = "用户" + userID[len(userID)-4:]
@@ -125,19 +148,30 @@ func (s *UserService) Register(ctx context.Context, req *RegisterRequest) (*Auth
 	return s.generateAuthResponse(user)
 }
 
-// Login 用户登录
+// Login 用户登录（支持手机号、邮箱或昵称）
 func (s *UserService) Login(ctx context.Context, req *LoginRequest) (*AuthResponse, error) {
-	user, err := s.userRepo.GetByPhone(ctx, req.Phone)
+	var user *model.User
+	var err error
+	switch {
+	case strings.TrimSpace(req.Phone) != "":
+		user, err = s.userRepo.GetByPhone(ctx, strings.TrimSpace(req.Phone))
+	case strings.TrimSpace(req.Email) != "":
+		user, err = s.userRepo.GetByEmail(ctx, strings.TrimSpace(req.Email))
+	case strings.TrimSpace(req.Nickname) != "":
+		user, err = s.userRepo.GetByNickname(ctx, strings.TrimSpace(req.Nickname))
+	default:
+		return nil, errors.New("请填写手机号、邮箱或用户名")
+	}
 	if err != nil {
 		return nil, err
 	}
 	if user == nil {
-		return nil, errors.New("用户不存在")
+		return nil, errors.New("用户不存在或密码错误")
 	}
 
 	// 验证密码
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		return nil, errors.New("密码错误")
+		return nil, errors.New("用户不存在或密码错误")
 	}
 
 	// 检查账户状态

@@ -9,10 +9,9 @@ type DoubaoAIAdapter struct {
 	// 预留字段
 }
 
-// NewDoubaoAIAdapter 创建豆包AI适配器（暂时返回nil）
+// NewDoubaoAIAdapter 创建豆包AI适配器（暂未接入，返回空实例）
 func NewDoubaoAIAdapter(apiKey, apiSecret, baseURL string) *DoubaoAIAdapter {
-	// TODO: 后续版本实现AI识别和推荐增强功能
-	return nil
+	return &DoubaoAIAdapter{}
 }
 
 // RecognizeClothing 衣物识别（后续版本实现）

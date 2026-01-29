@@ -49,8 +49,24 @@ func (r *UserRepository) GetByPhone(ctx context.Context, phone string) (*model.U
 
 // GetByEmail 根据邮箱获取用户
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*model.User, error) {
+	if email == "" {
+		return nil, nil
+	}
 	var user model.User
 	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	return &user, err
+}
+
+// GetByNickname 根据昵称获取用户
+func (r *UserRepository) GetByNickname(ctx context.Context, nickname string) (*model.User, error) {
+	if nickname == "" {
+		return nil, nil
+	}
+	var user model.User
+	err := r.db.WithContext(ctx).Where("nickname = ?", nickname).First(&user).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

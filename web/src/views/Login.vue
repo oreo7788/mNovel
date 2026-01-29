@@ -74,14 +74,14 @@ onMounted(() => {
   }
 })
 
-function handleSubmit() {
+async function handleSubmit() {
   const name = username.value.trim()
   const pwd = password.value
   if (!name || !pwd) return
 
   submitting.value = true
   try {
-    const ok = login(name, pwd, autoLogin.value)
+    const ok = await login(name, pwd, autoLogin.value)
     if (ok) {
       showToast('登录成功')
       const redirect = route.query.redirect || '/'

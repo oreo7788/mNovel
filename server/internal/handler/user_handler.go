@@ -42,6 +42,10 @@ func (h *UserHandler) Register(c *gin.Context) {
 			response.Conflict(c, err.Error())
 			return
 		}
+		if errors.Is(err, service.ErrEmailAlreadyRegistered) {
+			response.Conflict(c, err.Error())
+			return
+		}
 		if errors.Is(err, service.ErrInvalidPhoneFormat) {
 			response.BadRequest(c, err.Error())
 			return

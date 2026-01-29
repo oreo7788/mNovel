@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue'
+import { registerApi, loginApi } from '../api'
 
 const STORAGE_KEY = 'ydk_user'
 const USERS_KEY = 'ydk_users'
@@ -32,16 +33,19 @@ export function useUser() {
   const avatar = computed(() => user.value?.avatar ?? '')
   const nickname = computed(() => user.value?.nickname ?? '')
 
-  /** 用户名+密码登录，校验已注册用户；remember 为 true 时持久化到 localStorage（自动登录），否则仅 sessionStorage */
-  function login(username, password, remember = true) {
-    const users = loadUsers()
-    const u = users[username]
-    if (!u || u.password !== password) return false
-    const letter = (username || '用').slice(0, 1)
+  /** 用户名/邮箱/手机号+密码登录，调用后端接口；remember 为 true 时持久化到 localStorage，否则仅 sessionStorage */
+  async function login(account, password, remember = true) {
+    const result = await loginApi((account || '').trim(), password || '')
+    if (!result.ok) return false
+    const data = result.data || {}
+    const u = data.user || {}
+    const letter = (u.nickname || u.email || '用').toString().slice(0, 1)
     user.value = {
-      nickname: username,
-      email: u.email,
-      avatar: defaultAvatar(letter),
+      id: u.id,
+      nickname: u.nickname || '',
+      email: u.email || '',
+      avatar: u.avatar || defaultAvatar(letter),
+      access_token: data.access_token,
     }
     try {
       const json = JSON.stringify(user.value)
@@ -56,17 +60,14 @@ export function useUser() {
     return true
   }
 
-  /** 注册：用户名、密码、邮箱，写入本地用户表 */
-  function register(username, password, email) {
-    const users = loadUsers()
-    if (users[username]) return { ok: false, message: '用户名已存在' }
-    users[username] = { password, email }
-    try {
-      localStorage.setItem(USERS_KEY, JSON.stringify(users))
-    } catch (_) {
-      return { ok: false, message: '保存失败' }
-    }
-    return { ok: true }
+  /** 注册：调用后端接口，传昵称(用户名)、密码、邮箱 */
+  async function register(username, password, email) {
+    const result = await registerApi(
+      (username || '').trim(),
+      password || '',
+      (email || '').trim()
+    )
+    return result
   }
 
   function logout() {
