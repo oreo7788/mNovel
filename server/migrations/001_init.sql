@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS user_preferences (
 -- 品类表（品类与子品类，pid 为父级 id，NULL 表示顶级品类）
 CREATE TABLE IF NOT EXISTS categories (
     id INT(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    pid INT(10) NULL DEFAULT NULL COMMENT '父品类ID，NULL表示顶级品类',
+    pid INT(10) NULL DEFAULT 0 COMMENT '父品类ID，NULL表示顶级品类',
     user_id VARCHAR(20) NOT NULL COMMENT '用户ID',
     category_name VARCHAR(64) NOT NULL COMMENT '品类名称',
     status TINYINT DEFAULT 1 COMMENT '1:正常 0:禁用',
@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS categories (
 -- 衣物表
 CREATE TABLE IF NOT EXISTS clothing_items (
     id INT(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    item_id VARCHAR(64) NOT NULL COMMENT '衣物业务ID',
     user_id VARCHAR(20) NOT NULL COMMENT '用户ID',
     image_url VARCHAR(512) NOT NULL COMMENT '七牛云OSS URL',
     thumbnail_url VARCHAR(512) COMMENT '缩略图URL',
@@ -195,6 +196,7 @@ CREATE TABLE IF NOT EXISTS matching_rules (
 -- 上传任务表
 CREATE TABLE IF NOT EXISTS upload_tasks (
     id INT(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    task_id VARCHAR(64) NOT NULL COMMENT '上传任务业务ID',
     user_id VARCHAR(20) NOT NULL COMMENT '用户ID',
     file_name VARCHAR(255) NOT NULL,
     file_size BIGINT NOT NULL,

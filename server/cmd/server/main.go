@@ -75,7 +75,7 @@ func main() {
 	userService := service.NewUserService(jwtManager)
 	clothingService := service.NewClothingService(ossClient)
 	outfitService := service.NewOutfitService(nil) // AI适配器暂时不使用
-	uploadService := service.NewUploadService(ossClient, &cfg.Upload)
+	uploadService := service.NewUploadService(ossClient, &cfg.Upload, repository.NewClothingRepository())
 
 	// 初始化处理器
 	userHandler := handler.NewUserHandler(userService)

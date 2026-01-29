@@ -18,17 +18,19 @@ import (
 
 // UploadService 上传服务
 type UploadService struct {
-	uploadRepo *repository.UploadTaskRepository
-	ossClient  *storage.QiniuOSS
-	config     *config.UploadConfig
+	uploadRepo   *repository.UploadTaskRepository
+	clothingRepo *repository.ClothingRepository
+	ossClient    *storage.QiniuOSS
+	config       *config.UploadConfig
 }
 
 // NewUploadService 创建上传服务实例
-func NewUploadService(ossClient *storage.QiniuOSS, cfg *config.UploadConfig) *UploadService {
+func NewUploadService(ossClient *storage.QiniuOSS, cfg *config.UploadConfig, clothingRepo *repository.ClothingRepository) *UploadService {
 	return &UploadService{
-		uploadRepo: repository.NewUploadTaskRepository(),
-		ossClient:  ossClient,
-		config:     cfg,
+		uploadRepo:   repository.NewUploadTaskRepository(),
+		clothingRepo: clothingRepo,
+		ossClient:    ossClient,
+		config:       cfg,
 	}
 }
 
@@ -177,9 +179,19 @@ func (s *UploadService) CompleteUpload(ctx context.Context, userID string, req *
 		fileURL = url
 	}
 
-	// 更新任务状态
+	// 更新任务状态（上传任务表）
 	if err := s.uploadRepo.SetCompleted(ctx, task.ID, fileURL); err != nil {
 		return nil, err
+	}
+
+	// 将上传完成的图片保存到衣物表，便于衣橱展示与后续编辑
+	item := &model.ClothingItem{
+		ID:       task.ID,
+		UserID:   userID,
+		ImageURL: fileURL,
+	}
+	if s.clothingRepo != nil {
+		_ = s.clothingRepo.Create(ctx, item)
 	}
 
 	return &model.CompleteUploadResponse{
@@ -291,6 +303,16 @@ func (s *UploadService) SimpleUpload(ctx context.Context, userID, fileName strin
 		url, err := s.ossClient.Upload(key, data)
 		if err != nil {
 			return "", errors.New("上传失败: " + err.Error())
+		}
+		// 将上传完成的图片保存到衣物表
+		if s.clothingRepo != nil {
+			itemID := uuid.New().String()
+			item := &model.ClothingItem{
+				ID:       itemID,
+				UserID:   userID,
+				ImageURL: url,
+			}
+			_ = s.clothingRepo.Create(ctx, item)
 		}
 		return url, nil
 	}
