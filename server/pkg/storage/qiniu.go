@@ -24,7 +24,7 @@ type QiniuOSS struct {
 func NewQiniuOSS(accessKey, secretKey, bucket, domain string) *QiniuOSS {
 	mac := qbox.NewMac(accessKey, secretKey)
 	cfg := &storage.Config{
-		Zone:          &storage.ZoneHuadong, // 华东区域，可根据实际配置
+		Zone:          &storage.ZoneHuanan, // 华南区域（z2，up-z2.qiniup.com），bucket yidaiku 所在机房
 		UseHTTPS:      true,
 		UseCdnDomains: true,
 	}
