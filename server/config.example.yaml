@@ -28,10 +28,10 @@ jwt:
   refresh_token_ttl: 168h  # 7天
 
 qiniu:
-  access_key: your_qiniu_access_key
-  secret_key: your_qiniu_secret_key
+  access_key: ema79mrRaX0Mxbeq__QxBFJKtehBWTayUbZnSWRL
+  secret_key: m9Y_B867kk_ah9CNA109hEwNaq0gJrsBeAbpCTFw
   bucket: yidaiku
-  domain: https://cdn.example.com
+  domain: t9maq15qq.hn-bkt.clouddn.com
 
 doubao_ai:
   api_key: your_doubao_api_key
