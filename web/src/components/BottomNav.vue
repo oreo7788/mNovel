@@ -1,5 +1,5 @@
 <template>
-  <nav class="bottom-nav" aria-label="主导航">
+  <nav class="top-nav" aria-label="主导航">
     <router-link to="/" :class="['nav-item', { active: route.name === 'home' }]">
       <span class="icon">🏠</span>首页
     </router-link>

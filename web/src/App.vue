@@ -1,12 +1,14 @@
 <template>
   <div class="app">
-    <AppHeader />
+    <div class="top-bar">
+      <AppHeader />
+      <BottomNav />
+    </div>
     <main class="main-content">
       <RouterView v-slot="{ Component }">
         <component :is="Component" />
       </RouterView>
     </main>
-    <BottomNav />
   </div>
 </template>
 
