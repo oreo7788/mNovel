@@ -1,13 +1,27 @@
 import { ref, computed } from 'vue'
 
 const STORAGE_KEY = 'ydk_user'
+const USERS_KEY = 'ydk_users'
+const RESET_CODE_KEY = 'ydk_reset_code'
+const RESET_ALLOWED_KEY = 'ydk_reset_allowed'
+const CODE_EXPIRY_MS = 5 * 60 * 1000
+const RESET_ALLOWED_MS = 15 * 60 * 1000
 
 function loadUser() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = sessionStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(STORAGE_KEY)
     return raw ? JSON.parse(raw) : null
   } catch {
     return null
+  }
+}
+
+function loadUsers() {
+  try {
+    const raw = localStorage.getItem(USERS_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
   }
 }
 
@@ -18,23 +32,147 @@ export function useUser() {
   const avatar = computed(() => user.value?.avatar ?? '')
   const nickname = computed(() => user.value?.nickname ?? '')
 
-  function login(payload = {}) {
-    const { nickname: n = '用户', avatar: a = '' } = payload
-    const letter = (n || '用').slice(0, 1)
-    user.value = { nickname: n, avatar: a || defaultAvatar(letter) }
+  /** 用户名+密码登录，校验已注册用户；remember 为 true 时持久化到 localStorage（自动登录），否则仅 sessionStorage */
+  function login(username, password, remember = true) {
+    const users = loadUsers()
+    const u = users[username]
+    if (!u || u.password !== password) return false
+    const letter = (username || '用').slice(0, 1)
+    user.value = {
+      nickname: username,
+      email: u.email,
+      avatar: defaultAvatar(letter),
+    }
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(user.value))
+      const json = JSON.stringify(user.value)
+      if (remember) {
+        localStorage.setItem(STORAGE_KEY, json)
+        sessionStorage.removeItem(STORAGE_KEY)
+      } else {
+        sessionStorage.setItem(STORAGE_KEY, json)
+        localStorage.removeItem(STORAGE_KEY)
+      }
     } catch (_) {}
+    return true
+  }
+
+  /** 注册：用户名、密码、邮箱，写入本地用户表 */
+  function register(username, password, email) {
+    const users = loadUsers()
+    if (users[username]) return { ok: false, message: '用户名已存在' }
+    users[username] = { password, email }
+    try {
+      localStorage.setItem(USERS_KEY, JSON.stringify(users))
+    } catch (_) {
+      return { ok: false, message: '保存失败' }
+    }
+    return { ok: true }
   }
 
   function logout() {
     user.value = null
     try {
       localStorage.removeItem(STORAGE_KEY)
+      sessionStorage.removeItem(STORAGE_KEY)
     } catch (_) {}
   }
 
-  return { user, isLoggedIn, avatar, nickname, login, logout }
+  /** 根据邮箱查找对应用户名（本地用户表） */
+  function getUsernameByEmail(email) {
+    const users = loadUsers()
+    const em = (email || '').trim().toLowerCase()
+    for (const [name, data] of Object.entries(users)) {
+      if ((data.email || '').trim().toLowerCase() === em) return name
+    }
+    return null
+  }
+
+  /** 发送找回密码验证码（演示：生成 6 位码存 sessionStorage） */
+  function requestResetCode(email) {
+    const em = (email || '').trim()
+    if (!em) return { ok: false, message: '请输入邮箱' }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return { ok: false, message: '请输入有效的邮箱地址' }
+    const username = getUsernameByEmail(em)
+    if (!username) return { ok: false, message: '该邮箱未注册' }
+    const code = String(Math.floor(100000 + Math.random() * 900000))
+    const payload = { email: em, code, expiry: Date.now() + CODE_EXPIRY_MS }
+    try {
+      sessionStorage.setItem(RESET_CODE_KEY, JSON.stringify(payload))
+    } catch (_) {
+      return { ok: false, message: '发送失败' }
+    }
+    return { ok: true, code }
+  }
+
+  /** 校验验证码，通过则允许进入重置密码页 */
+  function verifyResetCode(email, code) {
+    const em = (email || '').trim()
+    const c = (code || '').trim()
+    if (!em || !c) return { ok: false, message: '请填写邮箱和验证码' }
+    try {
+      const raw = sessionStorage.getItem(RESET_CODE_KEY)
+      if (!raw) return { ok: false, message: '验证码已过期，请重新获取' }
+      const { email: storedEmail, code: storedCode, expiry } = JSON.parse(raw)
+      if (storedEmail !== em) return { ok: false, message: '邮箱与获取验证码时不一致' }
+      if (Date.now() > expiry) return { ok: false, message: '验证码已过期，请重新获取' }
+      if (storedCode !== c) return { ok: false, message: '验证码错误' }
+      sessionStorage.removeItem(RESET_CODE_KEY)
+      sessionStorage.setItem(RESET_ALLOWED_KEY, JSON.stringify({ email: em, until: Date.now() + RESET_ALLOWED_MS }))
+    } catch (_) {
+      return { ok: false, message: '验证失败' }
+    }
+    return { ok: true }
+  }
+
+  /** 检查当前是否允许重置密码（用于重置页进入校验） */
+  function checkResetAllowed() {
+    try {
+      const raw = sessionStorage.getItem(RESET_ALLOWED_KEY)
+      if (!raw) return null
+      const { email, until } = JSON.parse(raw)
+      if (Date.now() > until) {
+        sessionStorage.removeItem(RESET_ALLOWED_KEY)
+        return null
+      }
+      return email
+    } catch (_) {
+      return null
+    }
+  }
+
+  /** 重置密码（需先通过验证码校验） */
+  function resetPassword(newPassword) {
+    const allowed = checkResetAllowed()
+    if (!allowed) return { ok: false, message: '请先完成邮箱验证' }
+    const pwd = (newPassword || '').trim()
+    if (pwd.length < 8 || pwd.length > 50) return { ok: false, message: '密码长度在8到50个字符' }
+    const users = loadUsers()
+    const username = getUsernameByEmail(allowed)
+    if (!username) return { ok: false, message: '用户不存在' }
+    users[username].password = pwd
+    try {
+      localStorage.setItem(USERS_KEY, JSON.stringify(users))
+      sessionStorage.removeItem(RESET_ALLOWED_KEY)
+    } catch (_) {
+      return { ok: false, message: '保存失败' }
+    }
+    return { ok: true }
+  }
+
+  return {
+    user,
+    isLoggedIn,
+    avatar,
+    nickname,
+    login,
+    register,
+    logout,
+    getUsernameByEmail,
+    requestResetCode,
+    verifyResetCode,
+    checkResetAllowed,
+    resetPassword,
+  }
 }
 
 function defaultAvatar(letter) {

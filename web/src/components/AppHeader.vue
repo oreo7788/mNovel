@@ -3,11 +3,11 @@
     <div class="app-header-inner">
       <router-link to="/" class="logo">衣搭库</router-link>
       <div class="header-actions">
-        <router-link v-if="!isLoggedIn" to="/profile" class="header-login">登录/注册</router-link>
+        <router-link v-if="!isLoggedIn" to="/login" class="header-login">登录/注册</router-link>
         <router-link v-else to="/profile" class="header-avatar-link" aria-label="个人中心">
           <img :src="avatar" alt="" class="header-avatar" />
         </router-link>
-        <div class="header-dropdown" ref="dropdownRef">
+        <div v-if="isLoggedIn" class="header-dropdown" ref="dropdownRef">
           <button
             type="button"
             class="header-action-trigger"

@@ -11,7 +11,7 @@
       </template>
       <template v-else>
         <p class="profile-tip">登录后同步衣橱与收藏</p>
-        <button type="button" class="btn btn-primary" @click="mockLogin">登录 / 注册</button>
+        <router-link to="/login" class="btn btn-primary">前往登录</router-link>
       </template>
     </div>
   </section>
@@ -20,11 +20,7 @@
 <script setup>
 import { useUser } from '../composables/useUser'
 
-const { isLoggedIn, avatar, nickname, login, logout } = useUser()
-
-function mockLogin() {
-  login({ nickname: '用户' + Math.floor(Math.random() * 1000) })
-}
+const { isLoggedIn, avatar, nickname, logout } = useUser()
 </script>
 
 <style scoped>
@@ -53,13 +49,16 @@ function mockLogin() {
   color: var(--color-text-secondary);
   margin: 0 0 16px;
 }
-.btn {
+.profile-card .btn {
+  display: inline-block;
   padding: 10px 20px;
   border-radius: var(--radius-btn);
   font-size: 14px;
   border: none;
   cursor: pointer;
   font-family: inherit;
+  text-decoration: none;
+  text-align: center;
 }
 .btn-primary {
   background: var(--color-accent);
