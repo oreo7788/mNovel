@@ -14,13 +14,32 @@ import (
 
 var db *gorm.DB
 
+// 北京时区（东八区），全项目 created_at/updated_at 统一使用
+var beijingLoc = mustLoadLocation("Asia/Shanghai")
+
+func mustLoadLocation(name string) *time.Location {
+	loc, err := time.LoadLocation(name)
+	if err != nil {
+		panic("加载时区失败: " + err.Error())
+	}
+	return loc
+}
+
+// BeijingNow 返回当前北京时间，用于业务层需要显式设置时间时与 GORM NowFunc 一致
+func BeijingNow() time.Time {
+	return time.Now().In(beijingLoc)
+}
+
 // InitDB 初始化数据库连接
 func InitDB(cfg *config.DatabaseConfig) error {
 	var err error
-	
-	// 配置GORM
+
+	// 配置GORM：created_at/updated_at 一律使用北京时间
 	gormConfig := &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
+		NowFunc: func() time.Time {
+			return time.Now().In(beijingLoc)
+		},
 	}
 
 	// 连接数据库

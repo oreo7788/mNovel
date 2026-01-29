@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"time"
 
 	"yidaiku-server/internal/model"
 	"yidaiku-server/internal/repository"
@@ -79,7 +78,6 @@ func (s *ClothingService) Create(ctx context.Context, userID string, req *Create
 		Season:       req.Season,
 		Tags:         model.JSONArray(req.Tags),
 		Notes:        req.Notes,
-		CreatedAt:    time.Now(),
 	}
 
 	if err := s.clothingRepo.Create(ctx, item); err != nil {

@@ -2,16 +2,16 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
+	"math/big"
 	"regexp"
 	"strings"
-	"time"
 
 	"yidaiku-server/internal/model"
 	"yidaiku-server/internal/repository"
 	"yidaiku-server/pkg/auth"
 
-	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -67,6 +67,43 @@ type AuthResponse struct {
 // 中国大陆手机号：1 开头，共 11 位数字
 var phoneRegex = regexp.MustCompile(`^1[3-9]\d{9}$`)
 
+// userID 字符集：大小写字母 + 数字
+const userIDCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+const userIDLength = 16
+const userIDMaxRetries = 10
+
+// generateUniqueUserID 生成由大小写字母和数字组成的唯一 user_id（长度 16）
+func (s *UserService) generateUniqueUserID(ctx context.Context) (string, error) {
+	for i := 0; i < userIDMaxRetries; i++ {
+		id, err := randomAlphanumeric(userIDLength)
+		if err != nil {
+			return "", err
+		}
+		existing, err := s.userRepo.GetByID(ctx, id)
+		if err != nil {
+			return "", err
+		}
+		if existing == nil {
+			return id, nil
+		}
+	}
+	return "", errors.New("生成唯一 user_id 失败，请重试")
+}
+
+// randomAlphanumeric 生成长度为 n 的随机字符串（字符集：a-zA-Z0-9）
+func randomAlphanumeric(n int) (string, error) {
+	b := make([]byte, n)
+	charsetLen := big.NewInt(int64(len(userIDCharset)))
+	for i := 0; i < n; i++ {
+		idx, err := rand.Int(rand.Reader, charsetLen)
+		if err != nil {
+			return "", err
+		}
+		b[i] = userIDCharset[idx.Int64()]
+	}
+	return string(b), nil
+}
+
 // Register 用户注册（不要求绑定手机号；支持昵称+邮箱）
 func (s *UserService) Register(ctx context.Context, req *RegisterRequest) (*AuthResponse, error) {
 	// 若填写了手机号，则校验格式并检查是否已注册
@@ -99,14 +136,16 @@ func (s *UserService) Register(ctx context.Context, req *RegisterRequest) (*Auth
 		return nil, err
 	}
 
-	userID := uuid.New().String()
+	userID, err := s.generateUniqueUserID(ctx)
+	if err != nil {
+		return nil, err
+	}
 	user := &model.User{
-		ID:           userID,
+		UserID:       userID,
 		PasswordHash: string(hashedPassword),
 		Nickname:     req.Nickname,
 		Email:        req.Email,
 		Status:       1,
-		CreatedAt:    time.Now(),
 	}
 
 	// 手机号：有则写入，无则保持 null（不绑定）
@@ -140,7 +179,7 @@ func (s *UserService) Register(ctx context.Context, req *RegisterRequest) (*Auth
 
 	// 创建默认偏好设置
 	pref := &model.UserPreference{
-		UserID: user.ID,
+		UserID: user.UserID,
 	}
 	s.prefRepo.CreateOrUpdate(ctx, pref)
 
@@ -277,12 +316,12 @@ func (s *UserService) GetBehaviorCount(ctx context.Context, userID string) (int6
 
 // generateAuthResponse 生成认证响应
 func (s *UserService) generateAuthResponse(user *model.User) (*AuthResponse, error) {
-	accessToken, err := s.jwtManager.GenerateAccessToken(user.ID)
+	accessToken, err := s.jwtManager.GenerateAccessToken(user.UserID)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, err := s.jwtManager.GenerateRefreshToken(user.ID)
+	refreshToken, err := s.jwtManager.GenerateRefreshToken(user.UserID)
 	if err != nil {
 		return nil, err
 	}

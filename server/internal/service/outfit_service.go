@@ -6,7 +6,6 @@ import (
 	"errors"
 	"math/rand"
 	"sort"
-	"time"
 
 	"yidaiku-server/internal/adapter"
 	"yidaiku-server/internal/model"
@@ -43,10 +42,10 @@ func NewOutfitService(doubaoAI *adapter.DoubaoAIAdapter) *OutfitService {
 
 // RecommendResult 推荐结果
 type RecommendResult struct {
-	Outfits      []OutfitDetail `json:"outfits"`
-	IsColdStart  bool           `json:"is_cold_start"`
-	MissingItems []string       `json:"missing_items,omitempty"` // 缺失的品类
-	Templates    []model.OutfitTemplate `json:"templates,omitempty"` // 冷启动时的模板
+	Outfits      []OutfitDetail         `json:"outfits"`
+	IsColdStart  bool                   `json:"is_cold_start"`
+	MissingItems []string               `json:"missing_items,omitempty"` // 缺失的品类
+	Templates    []model.OutfitTemplate `json:"templates,omitempty"`     // 冷启动时的模板
 }
 
 // OutfitDetail 穿搭详情
@@ -602,7 +601,6 @@ func (s *OutfitService) saveRecommendation(ctx context.Context, userID string, o
 		Score:      outfit.Score,
 		Highlights: outfit.Highlights,
 		Source:     outfit.Source,
-		CreatedAt:  time.Now(),
 	}
 
 	s.outfitRepo.Create(ctx, recommendation)

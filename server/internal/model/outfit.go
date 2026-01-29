@@ -7,14 +7,14 @@ import (
 // OutfitRecommendation 穿搭推荐
 type OutfitRecommendation struct {
 	ID         string    `json:"id" gorm:"column:outfit_id;primaryKey;type:varchar(64)"`
-	UserID     string    `json:"user_id" gorm:"column:user_id;type:varchar(64);index"`
-	ItemIDs    JSONArray `json:"item_ids" gorm:"column:item_ids;type:json"`   // 单品ID数组
+	UserID     string    `json:"user_id" gorm:"column:user_id;type:varchar(20);index"`
+	ItemIDs    JSONArray `json:"item_ids" gorm:"column:item_ids;type:json"` // 单品ID数组
 	Occasion   string    `json:"occasion" gorm:"column:occasion;type:varchar(32)"`
-	Weather    JSONMap   `json:"weather" gorm:"column:weather;type:json"`      // 天气信息
+	Weather    JSONMap   `json:"weather" gorm:"column:weather;type:json"` // 天气信息
 	Score      float64   `json:"score" gorm:"column:score;type:decimal(3,2)"`
 	Highlights string    `json:"highlights" gorm:"column:highlights;type:text"` // 搭配亮点
-	Suitable   JSONArray `json:"suitable" gorm:"column:suitable;type:json"`    // 适用场景
-	Source     string    `json:"source" gorm:"column:source;type:varchar(32)"` // 推荐来源: ai/rule/template
+	Suitable   JSONArray `json:"suitable" gorm:"column:suitable;type:json"`     // 适用场景
+	Source     string    `json:"source" gorm:"column:source;type:varchar(32)"`  // 推荐来源: ai/rule/template
 	IsFavorite bool      `json:"is_favorite" gorm:"column:is_favorite;type:tinyint;default:0"`
 	IsApplied  bool      `json:"is_applied" gorm:"column:is_applied;type:tinyint;default:0"`
 	CreatedAt  time.Time `json:"created_at" gorm:"column:created_at;autoCreateTime;index"`
@@ -30,7 +30,7 @@ type OutfitTemplate struct {
 	ID          string    `json:"id" gorm:"column:template_id;primaryKey;type:varchar(64)"`
 	Name        string    `json:"name" gorm:"column:name;type:varchar(100)"`
 	Description string    `json:"description" gorm:"column:description;type:text"`
-	Items       JSONArray `json:"items" gorm:"column:items;type:json"`           // 模板单品描述
+	Items       JSONArray `json:"items" gorm:"column:items;type:json"` // 模板单品描述
 	Occasion    string    `json:"occasion" gorm:"column:occasion;type:varchar(32)"`
 	Style       string    `json:"style" gorm:"column:style;type:varchar(32)"`
 	Season      string    `json:"season" gorm:"column:season;type:varchar(16)"`
@@ -49,7 +49,7 @@ func (OutfitTemplate) TableName() string {
 // FavoriteOutfit 收藏的穿搭
 type FavoriteOutfit struct {
 	ID        uint      `json:"id" gorm:"column:id;primaryKey;autoIncrement"`
-	UserID    string    `json:"user_id" gorm:"column:user_id;type:varchar(64);index"`
+	UserID    string    `json:"user_id" gorm:"column:user_id;type:varchar(20);index"`
 	OutfitID  string    `json:"outfit_id" gorm:"column:outfit_id;type:varchar(64);index"`
 	Notes     string    `json:"notes" gorm:"column:notes;type:text"`
 	CreatedAt time.Time `json:"created_at" gorm:"column:created_at;autoCreateTime"`
@@ -63,10 +63,10 @@ func (FavoriteOutfit) TableName() string {
 // OutfitRecord 穿搭记录/日记
 type OutfitRecord struct {
 	ID        string    `json:"id" gorm:"column:record_id;primaryKey;type:varchar(64)"`
-	UserID    string    `json:"user_id" gorm:"column:user_id;type:varchar(64);index"`
+	UserID    string    `json:"user_id" gorm:"column:user_id;type:varchar(20);index"`
 	Date      time.Time `json:"date" gorm:"column:date;type:date;index"`
-	ImageURLs JSONArray `json:"image_urls" gorm:"column:image_urls;type:json"` // 实际穿搭照片
-	ItemIDs   JSONArray `json:"item_ids" gorm:"column:item_ids;type:json"`     // 搭配的单品
+	ImageURLs JSONArray `json:"image_urls" gorm:"column:image_urls;type:json"`      // 实际穿搭照片
+	ItemIDs   JSONArray `json:"item_ids" gorm:"column:item_ids;type:json"`          // 搭配的单品
 	OutfitID  string    `json:"outfit_id" gorm:"column:outfit_id;type:varchar(64)"` // 关联的推荐（如有）
 	Notes     string    `json:"notes" gorm:"column:notes;type:text"`
 	Tags      JSONArray `json:"tags" gorm:"column:tags;type:json"`
@@ -83,9 +83,9 @@ func (OutfitRecord) TableName() string {
 
 // RecommendRequest 推荐请求参数
 type RecommendRequest struct {
-	Occasion    string             `json:"occasion" binding:"required"`
-	Weather     *WeatherInfo       `json:"weather"`
-	Preferences *UserPreference    `json:"preferences,omitempty"`
+	Occasion    string          `json:"occasion" binding:"required"`
+	Weather     *WeatherInfo    `json:"weather"`
+	Preferences *UserPreference `json:"preferences,omitempty"`
 }
 
 // WeatherInfo 天气信息
@@ -98,7 +98,7 @@ type WeatherInfo struct {
 
 // ReplaceItemRequest 换一件请求
 type ReplaceItemRequest struct {
-	OutfitID     string `json:"outfit_id" binding:"required"`
-	OldItemID    string `json:"old_item_id" binding:"required"`
-	NewItemID    string `json:"new_item_id" binding:"required"`
+	OutfitID  string `json:"outfit_id" binding:"required"`
+	OldItemID string `json:"old_item_id" binding:"required"`
+	NewItemID string `json:"new_item_id" binding:"required"`
 }

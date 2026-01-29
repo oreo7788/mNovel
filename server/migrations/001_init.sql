@@ -6,7 +6,8 @@ USE yidaiku;
 
 -- 用户表
 CREATE TABLE IF NOT EXISTS users (
-    user_id VARCHAR(64) PRIMARY KEY,
+    id INT(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(20) NOT NULL,
     phone VARCHAR(20) UNIQUE,
     email VARCHAR(100),
     password_hash VARCHAR(255),
@@ -14,9 +15,10 @@ CREATE TABLE IF NOT EXISTS users (
     avatar VARCHAR(512),
     status TINYINT DEFAULT 1 COMMENT '1:正常 0:禁用',
     is_member TINYINT DEFAULT 0 COMMENT '是否会员',
-    member_expire DATETIME COMMENT '会员过期时间',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    member_expire INT(10) NOT NULL DEFAULT 0 COMMENT '会员过期时间',
+    created_at INT(10) NOT NULL DEFAULT 0 COMMENT '创建时间 Unix 秒',
+    updated_at INT(10) NOT NULL DEFAULT 0 COMMENT '更新时间 Unix 秒',
+    UNIQUE KEY uk_user_id (user_id),
     INDEX idx_phone (phone),
     INDEX idx_email (email),
     INDEX idx_status (status)
@@ -24,7 +26,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- 用户偏好设置表
 CREATE TABLE IF NOT EXISTS user_preferences (
-    user_id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(20) PRIMARY KEY,
     styles JSON COMMENT '风格偏好数组',
     occasions JSON COMMENT '场合偏好数组',
     colors JSON COMMENT '颜色偏好数组',
@@ -38,7 +40,7 @@ CREATE TABLE IF NOT EXISTS user_preferences (
 -- 衣物表
 CREATE TABLE IF NOT EXISTS clothing_items (
     item_id VARCHAR(64) PRIMARY KEY,
-    user_id VARCHAR(64) NOT NULL,
+    user_id VARCHAR(20) NOT NULL,
     image_url VARCHAR(512) NOT NULL COMMENT '七牛云OSS URL',
     thumbnail_url VARCHAR(512) COMMENT '缩略图URL',
     category VARCHAR(32) COMMENT '品类:上衣/裤子/裙子/鞋子/配饰',
@@ -64,7 +66,7 @@ CREATE TABLE IF NOT EXISTS clothing_items (
 -- 穿搭推荐表
 CREATE TABLE IF NOT EXISTS outfit_recommendations (
     outfit_id VARCHAR(64) PRIMARY KEY,
-    user_id VARCHAR(64) NOT NULL,
+    user_id VARCHAR(20) NOT NULL,
     item_ids JSON COMMENT '单品ID数组',
     occasion VARCHAR(32) COMMENT '场合',
     weather JSON COMMENT '天气信息',
@@ -103,7 +105,7 @@ CREATE TABLE IF NOT EXISTS outfit_templates (
 -- 收藏的穿搭表
 CREATE TABLE IF NOT EXISTS favorite_outfits (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id VARCHAR(64) NOT NULL,
+    user_id VARCHAR(20) NOT NULL,
     outfit_id VARCHAR(64) NOT NULL,
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -116,7 +118,7 @@ CREATE TABLE IF NOT EXISTS favorite_outfits (
 -- 穿搭记录/日记表
 CREATE TABLE IF NOT EXISTS outfit_records (
     record_id VARCHAR(64) PRIMARY KEY,
-    user_id VARCHAR(64) NOT NULL,
+    user_id VARCHAR(20) NOT NULL,
     date DATE NOT NULL,
     image_urls JSON COMMENT '实际穿搭照片',
     item_ids JSON COMMENT '搭配的单品',
@@ -135,7 +137,7 @@ CREATE TABLE IF NOT EXISTS outfit_records (
 -- 用户行为记录表
 CREATE TABLE IF NOT EXISTS user_behaviors (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id VARCHAR(64) NOT NULL,
+    user_id VARCHAR(20) NOT NULL,
     outfit_id VARCHAR(64),
     behavior_type VARCHAR(32) NOT NULL COMMENT 'favorite/apply/dislike/replace',
     metadata JSON,
@@ -166,7 +168,7 @@ CREATE TABLE IF NOT EXISTS matching_rules (
 -- 上传任务表
 CREATE TABLE IF NOT EXISTS upload_tasks (
     task_id VARCHAR(64) PRIMARY KEY,
-    user_id VARCHAR(64) NOT NULL,
+    user_id VARCHAR(20) NOT NULL,
     file_name VARCHAR(255) NOT NULL,
     file_size BIGINT NOT NULL,
     file_hash VARCHAR(64) NOT NULL,
@@ -189,7 +191,7 @@ CREATE TABLE IF NOT EXISTS upload_tasks (
 CREATE TABLE IF NOT EXISTS correction_feedbacks (
     id INT AUTO_INCREMENT PRIMARY KEY,
     item_id VARCHAR(64) NOT NULL,
-    user_id VARCHAR(64) NOT NULL COMMENT '已匿名化',
+    user_id VARCHAR(20) NOT NULL COMMENT '已匿名化',
     api_result JSON COMMENT '豆包AI返回的原始结果',
     corrected JSON COMMENT '用户修正后的结果',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
