@@ -98,6 +98,93 @@ body {
 
 .header-actions a:hover { color: var(--color-accent); }
 
+.header-login {
+  color: var(--color-accent) !important;
+  font-weight: 500;
+}
+
+.header-avatar-link {
+  display: flex;
+  align-items: center;
+}
+
+.header-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.header-avatar-link:hover .header-avatar {
+  opacity: 0.9;
+}
+
+/* 操作下拉 */
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.header-dropdown {
+  position: relative;
+  margin-left: 16px;
+}
+
+.header-action-trigger {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.header-action-trigger:hover,
+.header-action-trigger.open {
+  color: var(--color-accent);
+}
+
+.header-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 120px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-btn);
+  box-shadow: var(--shadow-card);
+  padding: 6px 0;
+  z-index: 20;
+}
+
+.header-dropdown-item {
+  display: block;
+  padding: 10px 16px;
+  color: var(--color-text);
+  text-decoration: none;
+  font-size: 14px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.header-dropdown-item:hover {
+  background: var(--color-bg-secondary);
+  color: var(--color-accent);
+}
+
+.dropdown-enter-active,
+.dropdown-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.dropdown-enter-from,
+.dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
 .main-content {
   flex: 1;
   min-height: 0;

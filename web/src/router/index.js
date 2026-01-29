@@ -7,6 +7,7 @@ const routes = [
   { path: '/favorites', name: 'favorites', component: () => import('../views/Favorites.vue'), meta: { title: '收藏' } },
   { path: '/upload', name: 'upload', component: () => import('../views/Upload.vue'), meta: { title: '上传衣物' } },
   { path: '/settings', name: 'settings', component: () => import('../views/Settings.vue'), meta: { title: '设置' } },
+  { path: '/profile', name: 'profile', component: () => import('../views/Profile.vue'), meta: { title: '个人中心' } },
 ]
 
 const router = createRouter({
