@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"errors"
+
 	"yidaiku-server/internal/middleware"
 	"yidaiku-server/internal/model"
 	"yidaiku-server/internal/service"
@@ -36,7 +38,15 @@ func (h *UserHandler) Register(c *gin.Context) {
 
 	result, err := h.userService.Register(c.Request.Context(), &req)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		if errors.Is(err, service.ErrPhoneAlreadyRegistered) {
+			response.Conflict(c, err.Error())
+			return
+		}
+		if errors.Is(err, service.ErrInvalidPhoneFormat) {
+			response.BadRequest(c, err.Error())
+			return
+		}
+		response.InternalError(c, err.Error())
 		return
 	}
 

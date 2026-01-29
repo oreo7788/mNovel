@@ -28,6 +28,7 @@ const (
 	CodeUnauthorized  = 401
 	CodeForbidden     = 403
 	CodeNotFound      = 404
+	CodeConflict      = 409 // 资源冲突（如重复注册）
 	CodeInternalError = 500
 )
 
@@ -75,6 +76,8 @@ func Error(c *gin.Context, code int, message string) {
 		httpStatus = http.StatusForbidden
 	case CodeNotFound:
 		httpStatus = http.StatusNotFound
+	case CodeConflict:
+		httpStatus = http.StatusConflict
 	case CodeInternalError:
 		httpStatus = http.StatusInternalServerError
 	}
@@ -112,6 +115,14 @@ func NotFound(c *gin.Context, message string) {
 		message = "资源不存在"
 	}
 	Error(c, CodeNotFound, message)
+}
+
+// Conflict 资源冲突（如手机号/邮箱已注册）
+func Conflict(c *gin.Context, message string) {
+	if message == "" {
+		message = "资源冲突"
+	}
+	Error(c, CodeConflict, message)
 }
 
 // InternalError 服务器内部错误

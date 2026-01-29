@@ -34,8 +34,11 @@ func (r *UserRepository) GetByID(ctx context.Context, userID string) (*model.Use
 	return &user, err
 }
 
-// GetByPhone 根据手机号获取用户
+// GetByPhone 根据手机号获取用户（空字符串直接返回 nil，不查库）
 func (r *UserRepository) GetByPhone(ctx context.Context, phone string) (*model.User, error) {
+	if phone == "" {
+		return nil, nil
+	}
 	var user model.User
 	err := r.db.WithContext(ctx).Where("phone = ?", phone).First(&user).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {

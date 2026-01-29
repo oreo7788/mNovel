@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"regexp"
 	"time"
 
 	"yidaiku-server/internal/model"
@@ -11,6 +12,12 @@ import (
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
+)
+
+// 注册相关错误，便于 Handler 区分 HTTP 状态码
+var (
+	ErrPhoneAlreadyRegistered = errors.New("该手机号已注册")
+	ErrInvalidPhoneFormat     = errors.New("手机号格式不正确，应为11位数字")
 )
 
 // UserService 用户服务
@@ -31,9 +38,9 @@ func NewUserService(jwtManager *auth.JWTManager) *UserService {
 	}
 }
 
-// RegisterRequest 注册请求
+// RegisterRequest 注册请求（手机号可选，不绑定手机号也可注册）
 type RegisterRequest struct {
-	Phone    string `json:"phone" binding:"required"`
+	Phone    string `json:"phone"` // 可选，不填则仅密码+昵称注册
 	Password string `json:"password" binding:"required,min=6"`
 	Nickname string `json:"nickname"`
 }
@@ -52,15 +59,23 @@ type AuthResponse struct {
 	ExpiresIn    int64       `json:"expires_in"` // 秒
 }
 
-// Register 用户注册
+// 中国大陆手机号：1 开头，共 11 位数字
+var phoneRegex = regexp.MustCompile(`^1[3-9]\d{9}$`)
+
+// Register 用户注册（不要求绑定手机号）
 func (s *UserService) Register(ctx context.Context, req *RegisterRequest) (*AuthResponse, error) {
-	// 检查手机号是否已存在
-	existingUser, err := s.userRepo.GetByPhone(ctx, req.Phone)
-	if err != nil {
-		return nil, err
-	}
-	if existingUser != nil {
-		return nil, errors.New("该手机号已注册")
+	// 若填写了手机号，则校验格式并检查是否已注册
+	if req.Phone != "" {
+		if !phoneRegex.MatchString(req.Phone) {
+			return nil, ErrInvalidPhoneFormat
+		}
+		existingUser, err := s.userRepo.GetByPhone(ctx, req.Phone)
+		if err != nil {
+			return nil, err
+		}
+		if existingUser != nil {
+			return nil, ErrPhoneAlreadyRegistered
+		}
 	}
 
 	// 密码加密
@@ -69,18 +84,31 @@ func (s *UserService) Register(ctx context.Context, req *RegisterRequest) (*Auth
 		return nil, err
 	}
 
-	// 创建用户
+	userID := uuid.New().String()
 	user := &model.User{
-		ID:           uuid.New().String(),
-		Phone:        req.Phone,
+		ID:           userID,
 		PasswordHash: string(hashedPassword),
 		Nickname:     req.Nickname,
 		Status:       1,
 		CreatedAt:    time.Now(),
 	}
 
+	// 手机号：有则写入，无则保持 null（不绑定）
+	if req.Phone != "" {
+		user.Phone = &req.Phone
+	}
+
+	// 默认昵称：有手机用后4位，无手机用 user_id 后4位
 	if user.Nickname == "" {
-		user.Nickname = "用户" + req.Phone[len(req.Phone)-4:]
+		if req.Phone != "" {
+			user.Nickname = "用户" + req.Phone[len(req.Phone)-4:]
+		} else {
+			if len(userID) >= 4 {
+				user.Nickname = "用户" + userID[len(userID)-4:]
+			} else {
+				user.Nickname = "用户"
+			}
+		}
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
