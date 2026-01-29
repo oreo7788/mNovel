@@ -69,10 +69,10 @@ var phoneRegex = regexp.MustCompile(`^1[3-9]\d{9}$`)
 
 // userID 字符集：大小写字母 + 数字
 const userIDCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-const userIDLength = 16
+const userIDLength = 10
 const userIDMaxRetries = 10
 
-// generateUniqueUserID 生成由大小写字母和数字组成的唯一 user_id（长度 16）
+// generateUniqueUserID 生成由大小写字母和数字组成的唯一 user_id（长度 10）
 func (s *UserService) generateUniqueUserID(ctx context.Context) (string, error) {
 	for i := 0; i < userIDMaxRetries; i++ {
 		id, err := randomAlphanumeric(userIDLength)
